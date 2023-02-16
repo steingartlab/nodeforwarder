@@ -13,5 +13,4 @@ done
 
 echo "Starting nodeforwarder.js on port $internet_port with serial port $serial_port at baud rate $baud_rate"
 
-npm install forever -g
-sudo forever start nodeforwarder.js $internet_port $serial_port $baud_rate 10000 LOG=YES
+forever start --append nodeforwarder.js $internet_port $serial_port $baud_rate 10000 LOG=YES
