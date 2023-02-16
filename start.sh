@@ -16,12 +16,6 @@ while getopts "p:b:i" opt; do
   esac
 done
 
-# Check that all variables have been provided
-if [[ -z $serial_port || -z $baud_rate || -z $internet_port]]; then
-  echo "Usage: $0 -p serial_port -b baud_rate -i internet_port" >&2
-  exit 1
-fi
-
 # This assumes npm is installedg
 npm install forever -g
 forever start nodeforwarder.js internet_port serial_port baud_rate 10000 LOG=YES
