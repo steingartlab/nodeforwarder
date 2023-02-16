@@ -16,6 +16,6 @@ while getopts "p:b:i" opt; do
   esac
 done
 
-# This assumes npm is installedg
+# This assumes npm is installed
 npm install forever -g
-forever start nodeforwarder.js internet_port serial_port baud_rate 10000 LOG=YES
+sudo forever start nodeforwarder.js internet_port serial_port baud_rate 10000 LOG=YES
