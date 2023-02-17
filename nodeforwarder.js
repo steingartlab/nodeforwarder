@@ -26,6 +26,7 @@ TODO as of 2021-10-16:
 */
 
 parts = process.argv
+console.log("Entering the Wu Tang")
 
 if (parts.length < 6) {
 	console.log("usage: node nodeforwader.js [HTTP PORT] [SERIAL PORT] [BAUD] [BUFFER LENGTH]")
