@@ -50,7 +50,7 @@ where
 - `SERIALSPEED` = the baud rate for the device on the serial port.  
    - If you coded it yourself in arduino, it's the same as `Serial.begin(SERIALSPEED)`, otherwise it's either settable according to the manufacturer's instructions or fixed.  Good guesses are already `9600` or `57600`.
 
-   - `BUFF` = the number of characters to buffer from the serial port
+- `BUFF` = the number of characters to buffer from the serial port
    - `10000`  is typically a safe values
    - **NB**: This buffer lets data persist, but it does not tell you whether data is stale or not, e.g. the system can get into places where the serial port device bonks but the forwarder doesn't crash, and when you read data you'll always see the last message passed.  At some point I'll figure out a simple "last message received" check.
 
