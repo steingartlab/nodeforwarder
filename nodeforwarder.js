@@ -61,9 +61,10 @@ serialConnection.on("close", function () {
 
 serialConnection.on('data', function (data) {
 
-	console.log(data.toString('binary'));
+	incoming_from_device = data.toString('binary');
+	console.log(`incoming' ${incoming_from_device}`);
 
-	buffer += data.toString('binary')
+	buffer += incoming_from_device;
 	lastHeard = new Date().getTime()
 	if (buffer.length > bufferLength) buffer = buffer.substr(buffer.length - bufferLength, buffer.length)
 	io.emit('data', data.toString('utf8'));
