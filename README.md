@@ -1,12 +1,12 @@
 # Node Forwarder
-A simple serialport to RESTful interface.
+_A simple serialport to RESTful interface._
 
 ## Overview
 Serial ports, bless their robust and simple yet legacy bound hearts, are one to one. Once a program connects to a serial port, without 1337 skills, only one program can attach to it.  This is not inherently good nor bad, it just is. 
 
 For debugging hardware, and for having a second input for control loops, making the serial port one-to-many is useful. So let's go.
 
-nodeforwarder connects to your serialport to an http port of your specification, and allows you to read from the serial by points your browser (or better yet cURL like function) to
+`nodeforwarder` connects to your serialport to an http port of your specification, and allows you to read from the serial by points your browser (or better yet cURL like function) to
 
 `http://localhost:PORT/read/`
 
@@ -18,47 +18,56 @@ or
 
 `http://localhost:PORT/writecf/YOUR STRING HERE`
 
-if you want to append a `\r\n`
+if you want to append a `\r\n`.
 
 Of course, if your computadora is attached to the interwebs, your ports will be accessible to anyone that your firewall allows via `http://YOUR_IP_OR_WHATEVERDOTCOM:PORT/`
 
-This is also not inherently good or bad, it just is.  
+This is also not inherently good or bad, it just is $\longrightarrow$ Make sure that the computer running `nodeforwarder` is on `zerotier` to prevent unwanted traffic.
 
-## Required Libraries
-Just `npm i`, but FYI
-- serialport -> `npm install serialport`
-- express -> `npm install express`
-- sleep -> `npm install sleep`
-- socket.io -> `npm install socket.io`
-- cors -> `npm install cors`
-- body-parser -> `npm install body-parser`
+## Run using Docker
 
-## Quick Run
-In the directory where you placed the files run
-- on first run `npm i`
-- then and thereafter `node nodeforwader.js iPORT pPORT SERIALSPEED BUFF`
+Nodeforwarder can be run locally, see the end of this README for instructions. However, for our applications we typically use it in conjuction with other software, e.g. pithy and picoscopes. Orchestrating these should be done using Docker. To build the Docker image, run from the repo's root folder:
 
-where
- - `iPORT` = the internet port (e.g. localhost:8000 would be 8000).  
-     - You can make this whatever you want, just make sure there's nothing else trying to run at that port (e.g. pithy, or another forwarder).  If you try to start a forwarder where there's a port in use you'll just get an error, so try another port.  Generally, ports under `1000` are reserved for system use, you can start those but probably have to sudo your way in.  If you don't know what that means don't worry about it
-    
-- `pPORT` = the location of the serial port.  
-   - on a linux box this looks like `/dev/ttyUSB*`, where the * is a number in the order the devices were plugged in currently.
-   - on a mac this looks like `/dev/tty.usb*` is typically a generated string depending on _what_ USB port you plugged into.  Note that it may not look like `/dev/tty.usb*`, but use your ~Princeton~ Columbia brain and play with the problem.
-   - on a Windows box this will be `COMX`, where X is again the order the device was plugged in on that computer.  Note that this is _persistent_, so if something is `COM4` it is always `COM4` 
+`docker build . -t YOUR_TAG` (ours is `steingartlab/easi:nodeforwarder`)
 
-- `SERIALSPEED` = the baud rate for the device on the serial port.  
-   - If you coded it yourself in arduino, it's the same as `Serial.begin(SERIALSPEED)`, otherwise it's either settable according to the manufacturer's instructions or fixed.  Good guesses are already `9600` or `57600`.
+and then using `docker-compose`
 
-- `BUFF` = the number of characters to buffer from the serial port
-   - `10000`  is typically a safe value
-   - **NB**: This buffer lets data persist, but it does not tell you whether data is stale or not, e.g. the system can get into places where the serial port device bonks but the forwarder doesn't crash, and when you read data you'll always see the last message passed. Use `/lastread` to ensure the data is fresh.
+`docker-compose up -d`
 
-phew.  not so quick.  but all you have to write is something like this
+(again, in the same folder as the `.yaml` file) where the `docker-compose.yaml` file looks something like this
 
-`node nodeforwader.js 9000 /dev/ttyUSB0 57600 10000`
+```
+version: "3"
+services:
+  pulser:
+    container_name: pulser
+    image: steingartlab/easi:nodeforwarder
+    ports:
+      - 9002:9002
+    environment:
+      - serial_port=/dev/ttyUSB0
+      - internet_port=9002
+      - baud_rate=9600
+    volumes:
+      - /dev/:/dev/
+      - nodeforwarder:/nodeforwarder/
+    privileged: true
+    tty: true
+    networks:
+      acoustics-network:
+        ipv4_address: 192.168.0.20
 
-or spin it up as a Docker container (preferred)
+volumes:
+  docker.sock:
+  nodeforwarder:
+networks:
+  acoustics-network:
+    ipam:
+      config:
+        - subnet: 192.168.0.0/24
+```
+
+with other images can be added as needed.
 
 ## Using the Nodeforwarder
 
@@ -89,8 +98,10 @@ To read what comes back, type
   - Writes PAYLOAD with an appended '\r\n' to the serial port
 - `/read`
   - returns the current _entire_ buffer from the serial port.  You'll want to parse it out 
-- `/lastreading`
+- `/lastread`
   - returns the last time the nodeforwarder received data from the serialport, in unixtime (ms).
+- `/flusbuffer`
+  - Clears the buffer
 
 ## Post URLS
 - `/write`
@@ -160,7 +171,50 @@ r.post("http://localhost:9000/write",data=out)
 ## your code here
 ```
 
+## Quick Run - Local (depreciated)
+
+In the directory where you placed the files run
+
+on first run npm i
+then and thereafter node nodeforwader.js iPORT pPORT SERIALSPEED BUFF
+
+where
+ - `iPORT` = the internet port (e.g. localhost:8000 would be 8000).  
+     - You can make this whatever you want, just make sure there's nothing else trying to run at that port (e.g. pithy, or another forwarder).  If you try to start a forwarder where there's a port in use you'll just get an error, so try another port.  Generally, ports under `1000` are reserved for system use, you can start those but probably have to sudo your way in.  If you don't know what that means don't worry about it
+    
+- `pPORT` = the location of the serial port.  
+   - on a linux box this looks like `/dev/ttyUSB*`, where the * is a number in the order the devices were plugged in currently.
+   - on a mac this looks like `/dev/tty.usb*` is typically a generated string depending on _what_ USB port you plugged into.  Note that it may not look like `/dev/tty.usb*`, but use your ~Princeton~ Columbia brain and play with the problem.
+   - on a Windows box this will be `COMX`, where X is again the order the device was plugged in on that computer.  Note that this is _persistent_, so if something is `COM4` it is always `COM4` 
+
+- `SERIALSPEED` = the baud rate for the device on the serial port.  
+   - If you coded it yourself in arduino, it's the same as `Serial.begin(SERIALSPEED)`, otherwise it's either settable according to the manufacturer's instructions or fixed.  Good guesses are already `9600` or `57600`.
+
+
+phew.  not so quick.  but all you have to write is something like this
+
+`node nodeforwader.js 9000 /dev/ttyUSB0 57600`
+
+
+
+## Required Libraries
+Just `npm i`, but FYI
+- serialport -> `npm install serialport`
+- express -> `npm install express`
+- sleep -> `npm install sleep`
+- socket.io -> `npm install socket.io`
+- cors -> `npm install cors`
+- body-parser -> `npm install body-parser`
+
+
+
 ## Updates
+
+- 2023-05-29
+  - Steingartlab/Gunnar's fork diverging subtly in usage and behavior
+    - Buffer length is hardcoded
+    - `flushbuffer` added
+    - Docker instructions added
 
 - 2021-12-27
   - `POST` calls now behaving (I hope)

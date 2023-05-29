@@ -15,4 +15,4 @@ WORKDIR nodeforwarder/
 RUN npm install
 
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
-CMD node nodeforwarder.js $internet_port $serial_port $baud_rate 10000
+CMD node nodeforwarder.js $internet_port $serial_port $baud_rate

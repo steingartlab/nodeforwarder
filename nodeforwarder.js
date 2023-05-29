@@ -25,21 +25,25 @@ TODO as of 2021-10-16:
 
 */
 
-parts = process.argv
-console.log("Entering the Wu Tang")
 
-if (parts.length < 6) {
-	console.log("usage: node nodeforwader.js [HTTP PORT] [SERIAL PORT] [BAUD] [BUFFER LENGTH]")
+parts = process.argv
+console.log("Starting up nodeforwarder")
+
+if (parts.length < 5) {
+	console.log("usage: node nodeforwader.js [HTTP PORT] [SERIAL PORT] [BAUD]")
 	process.exit(1);
 }
 
 else {
 	console.log(parts);
-	hp = parts[2]
-	sp = parts[3]
+	httpPort = parts[2]
+	serialPort = parts[3]
 	baud = parseInt(parts[4])
-	blen = parseInt(parts[5])
 }
+
+const bufferLength = 10000;
+var buffer = ""; //On Data fill a circular buffer of the specified length
+var lastHeard = 0;
 
 var bodyParser = require('body-parser');
 var app = require('express')();
@@ -47,12 +51,12 @@ var fs = require('fs');
 var cors = require('cors')
 const server = require('http').createServer(app);
 var io = require('socket.io')(server, { cors: { methods: ["GET", "POST"] } });
-server.listen(hp);
+server.listen(httpPort);
 
 
 var sleep = require("sleep").sleep
 var SerialPort = require("serialport"); //per ak47 fix
-var serialPort = new SerialPort(sp,
+var serialPort = new SerialPort(serialPort,
 	{
 		baudRate: baud
 	});
@@ -63,34 +67,24 @@ serialPort.on("open", function () {
 
 });
 
+
 serialPort.on("close", function () {
 	console.log('closed, reopening');
-	var serialPort = new SerialPort(sp,
+	var serialPort = new SerialPort(serialPort,
 		{
-			baudrate: baud
+			baudRate: baud
 		});
 
 });
 
-//sleep for 5 seconds for arduino serialport purposes
-for (var i = 0; i < 3; i++) {
-	console.log(i);
-	sleep(1);
-}
 
-
-//On Data fill a circular buf of the specified length
-buf = ""
-
-//last heard
-var lh = 0;
 serialPort.on('data', function (data) {
 
 	console.log(data.toString('binary'));
 
-	buf += data.toString('binary')
-	lh = new Date().getTime()
-	if (buf.length > blen) buf = buf.substr(buf.length - blen, buf.length)
+	buffer += data.toString('binary')
+	lastHeard = new Date().getTime()
+	if (buffer.length > bufferLength) buffer = buffer.substr(buffer.length - bufferLength, buffer.length)
 	io.emit('data', data.toString('utf8'));
 
 });
@@ -103,22 +97,30 @@ app.use(bodyParser.urlencoded({ extended: true })); //post forms
 app.use(bodyParser.json()) // json forms (e.g. axios)
 
 
-//Write to serial port
-app.get('/write/*', function (req, res) {
-	toSend = req.originalUrl.replace("/write/", "")
+function get_timestamp() {
+	return new Date().toISOString().slice(0, 19); // Remove milliseconds
+}
+
+function send(url, req, res) {
+	toSend = req.originalUrl.replace(`/${url}/`, "")
 	toSend = decodeURIComponent(toSend);
-	console.log(toSend)
-	serialPort.write(toSend)
-	res.send(toSend)
+	toSend += req.originalUrl.includes("/writecf/") ? "\r\n" : "";
+	const timestamp = get_timestamp()
+	console.log(`${timestamp} sent: ${toSend}`);
+	serialPort.write(toSend);
+	res.send(toSend);
+}
+
+
+app.get('/write/*', function (req, res) {
+	send('write', req, res);
 });
 
+
 app.get('/writecf/*', function (req, res) {
-	toSend = req.originalUrl.replace("/writecf/", "")
-	toSend = decodeURIComponent(toSend);
-	console.log(toSend)
-	serialPort.write(toSend + "\r\n")
-	res.send(toSend)
+	send('writecf', req, res);
 });
+
 
 //#expects data to be in {'payload':data} format
 app.post('/write', function (req, res) {
@@ -132,15 +134,21 @@ app.post('/write', function (req, res) {
 
 //Show Last Updated
 app.get('/lastread/', function (req, res) {
-	lhs = lh.toString();
-	console.log(lhs)
+	lhs = lastHeard.toString();
+	console.log(`lastread ${lhs}`)
 	res.send(lhs)
 });
 
 
 //read buffer
 app.get('/read/', function (req, res) {
-	res.send(buf)
+	res.send(buffer)
+});
+
+
+app.get('/flushbuffer/', function (req, res) {
+	// Flush the buffer
+	buffer = "";
 });
 
 
@@ -156,7 +164,7 @@ app.get('/readout/', function (req, res) {
 
 //sockets
 io.on('connection', function (socket) {
-	io.emit('data', buf)
+	io.emit('data', buffer)
 	socket.on('input', function (msg) {
 		//console.log('message: ' + msg);
 		serialPort.write(msg + "\r\n")
