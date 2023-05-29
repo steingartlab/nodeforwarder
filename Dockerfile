@@ -14,5 +14,5 @@ RUN git clone http://github.com/steingartlab/nodeforwarder
 WORKDIR nodeforwarder/
 RUN npm install
 
-ENTRYPOINT ["/bin/bash", "-l", "-c"]
-CMD node nodeforwarder.js $internet_port $serial_port $baud_rate
+CMD ["/bin/bash", "-l", "-c", "node nodeforwarder.js $internet_port $serial_port $baud_rate"]
+
