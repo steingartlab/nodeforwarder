@@ -44,19 +44,21 @@ where
     
 - `pPORT` = the location of the serial port.  
    - on a linux box this looks like `/dev/ttyUSB*`, where the * is a number in the order the devices were plugged in currently.
-   - on a mac this looks like `/dev/tty.usb*` is typically a generated string depending on _what_ USB port you plugged into.  Note that it may not look like `/dev/tty.usb*`, but use your Princeton brain and play with the problem.
+   - on a mac this looks like `/dev/tty.usb*` is typically a generated string depending on _what_ USB port you plugged into.  Note that it may not look like `/dev/tty.usb*`, but use your ~Princeton~ Columbia brain and play with the problem.
    - on a Windows box this will be `COMX`, where X is again the order the device was plugged in on that computer.  Note that this is _persistent_, so if something is `COM4` it is always `COM4` 
 
 - `SERIALSPEED` = the baud rate for the device on the serial port.  
    - If you coded it yourself in arduino, it's the same as `Serial.begin(SERIALSPEED)`, otherwise it's either settable according to the manufacturer's instructions or fixed.  Good guesses are already `9600` or `57600`.
 
-   - `BUFF` = the number of characters to buffer from the serial port
-   - `10000`  is typically a safe values
-   - **NB**: This buffer lets data persist, but it does not tell you whether data is stale or not, e.g. the system can get into places where the serial port device bonks but the forwarder doesn't crash, and when you read data you'll always see the last message passed.  At some point I'll figure out a simple "last message received" check.
+- `BUFF` = the number of characters to buffer from the serial port
+   - `10000`  is typically a safe value
+   - **NB**: This buffer lets data persist, but it does not tell you whether data is stale or not, e.g. the system can get into places where the serial port device bonks but the forwarder doesn't crash, and when you read data you'll always see the last message passed. Use `/lastread` to ensure the data is fresh.
 
 phew.  not so quick.  but all you have to write is something like this
 
 `node nodeforwader.js 9000 /dev/ttyUSB0 57600 10000`
+
+or spin it up as a Docker container (preferred)
 
 ## Using the Nodeforwarder
 
