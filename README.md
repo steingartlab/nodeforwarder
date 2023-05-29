@@ -1,6 +1,8 @@
 # Node Forwarder
 _A simple serialport to RESTful interface._
 
+> Note: This is a fork from [Dan's O.G.](https://github.com/dansteingart/nodeforwarder). It varies slightly in functionality and favors containerized usage over local.
+
 ## Overview
 Serial ports, bless their robust and simple yet legacy bound hearts, are one to one. Once a program connects to a serial port, without 1337 skills, only one program can attach to it.  This is not inherently good nor bad, it just is. 
 
