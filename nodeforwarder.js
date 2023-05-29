@@ -82,6 +82,11 @@ function get_timestamp() {
 	return new Date().toISOString();
 }
 
+function log(message) {
+	timestamp = get_timestamp();
+	console.log(`${timestamp}: ${message}`);
+}
+
 function send(url, req, res) {
 	toSend = req.originalUrl.replace(`/${url}/`, "")
 	toSend = decodeURIComponent(toSend);
@@ -89,8 +94,7 @@ function send(url, req, res) {
 	serialConnection.write(toSend);
 	res.send(toSend);
 
-	const timestamp = get_timestamp();
-	console.log(`${timestamp} sent: ${toSend}`);
+	log(toSend);
 }
 
 
@@ -108,29 +112,35 @@ app.get('/writecf/*', function (req, res) {
 app.post('/write', function (req, res) {
 	x = req.body
 	toSend = x['payload']
-	console.log(toSend)
 	serialConnection.write(toSend)
 	res.send(toSend)
+
+	log(toSend);
 });
 
 
 //Show Last Updated
 app.get('/lastread/', function (req, res) {
 	lastHeard = lastHeard.toString();
-	console.log(`lastread ${lastHeard}`)
 	res.send(lastHeard)
+
+	console.log(`lastread ${lastHeard}`)
 });
 
 
 //read buffer
 app.get('/read/', function (req, res) {
-	res.send(buffer)
+	res.send(buffer);
 });
 
 
 app.get('/flushbuffer/', function (req, res) {
 	// Flush the buffer
 	buffer = "";
+
+	message = 'buffer flushed';
+	res.send(message);
+	log(message)
 });
 
 
